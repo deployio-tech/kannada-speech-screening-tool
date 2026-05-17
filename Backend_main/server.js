@@ -16,7 +16,14 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const PYTHON_BACKEND_URL =
   process.env.PYTHON_BACKEND_URL || "http://localhost:5000";
-const DATA_PATH = path.join(__dirname, "..", "Frontend_main", "assets", "data", "children.json");
+const DATA_PATH = path.join(
+  __dirname,
+  "..",
+  "Frontend_main",
+  "assets",
+  "data",
+  "children.json",
+);
 
 // Connect to MongoDB
 connectDB().catch((err) => {
@@ -97,7 +104,15 @@ app.use(
     credentials: true,
   }),
 );
-app.use(express.json());
+// Explicitly handle UTF-8 for Kannada text support
+app.use(express.json({ charset: "utf-8" }));
+app.use(express.text({ charset: "utf-8" }));
+app.use(express.urlencoded({ extended: true, charset: "utf-8" }));
+// Set UTF-8 as default response encoding
+app.use((req, res, next) => {
+  res.charset = "utf-8";
+  next();
+});
 
 // Serve static files (place this before API routes)
 app.use(express.static(path.join(__dirname, "..", "Frontend_main")));
@@ -137,7 +152,14 @@ app.get("/tts", async (req, res) => {
 // API to get children by age and search (robust Kannada key support)
 app.get("/api/children", (req, res) => {
   const { age, search } = req.query;
-  const dataPath = path.join(__dirname, "..", "Frontend_main", "assets", "data", "children.json");
+  const dataPath = path.join(
+    __dirname,
+    "..",
+    "Frontend_main",
+    "assets",
+    "data",
+    "children.json",
+  );
   let children = JSON.parse(fs.readFileSync(dataPath, "utf8"));
 
   // Filter by age (support both string and number)
@@ -168,7 +190,14 @@ app.get("/api/children", (req, res) => {
 
 // API to add a new child (Kannada fields)
 app.post("/api/children", (req, res) => {
-  const dataPath = path.join(__dirname, "..", "Frontend_main", "assets", "data", "children.json");
+  const dataPath = path.join(
+    __dirname,
+    "..",
+    "Frontend_main",
+    "assets",
+    "data",
+    "children.json",
+  );
   let children = JSON.parse(fs.readFileSync(dataPath, "utf8"));
   const newChild = req.body;
   newChild.id = children.length ? children[children.length - 1].id + 1 : 1;
@@ -179,7 +208,14 @@ app.post("/api/children", (req, res) => {
 
 // API to update a child's details
 app.put("/api/children/:id", (req, res) => {
-  const dataPath = path.join(__dirname, "..", "Frontend_main", "assets", "data", "children.json");
+  const dataPath = path.join(
+    __dirname,
+    "..",
+    "Frontend_main",
+    "assets",
+    "data",
+    "children.json",
+  );
   let children = JSON.parse(fs.readFileSync(dataPath, "utf8"));
   const childId = parseInt(req.params.id, 10);
   const childIndex = children.findIndex((c) => c.id === childId);
@@ -229,7 +265,14 @@ app.post("/api/children/:id/report", (req, res) => {
 
 // Get all reports for a child
 app.get("/api/children/:id/reports", (req, res) => {
-  const dataPath = path.join(__dirname, "..", "Frontend_main", "assets", "data", "children.json");
+  const dataPath = path.join(
+    __dirname,
+    "..",
+    "Frontend_main",
+    "assets",
+    "data",
+    "children.json",
+  );
   let children = JSON.parse(fs.readFileSync(dataPath, "utf8"));
   const childId = parseInt(req.params.id, 10);
   const child = children.find((c) => c.id === childId);
@@ -320,11 +363,13 @@ app.post("/api/generate-report", (req, res) => {
       doc.registerFont("ipa", FONT_LATIN);
     }
 
-    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Type", "application/pdf; charset=utf-8");
     res.setHeader(
       "Content-Disposition",
       "attachment; filename=child_report.pdf",
     );
+    // Ensure proper UTF-8 encoding for BOM
+    res.setHeader("Content-Encoding", "utf-8");
     doc.pipe(res);
 
     // Debug log (non-sensitive)

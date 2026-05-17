@@ -3,8 +3,14 @@ const mongoose = require("mongoose");
 
 const connectDB = async () => {
   try {
-    const mongoURI =
+    let mongoURI =
       process.env.MONGODB_URI || "mongodb://localhost:27017/kannada_speech_db";
+
+    // Ensure UTF-8 encoding for Kannada text support
+    if (!mongoURI.includes("?retryWrites")) {
+      mongoURI += mongoURI.includes("?") ? "&" : "?";
+      mongoURI += "retryWrites=true&w=majority";
+    }
 
     // Note: useNewUrlParser and useUnifiedTopology are deprecated in MongoDB driver v4+
     await mongoose.connect(mongoURI);
