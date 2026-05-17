@@ -33,11 +33,11 @@ const useDatabase = () => {
 };
 
 // Optional font paths (add these files to assets/fonts to enable Unicode/IPA)
-// In production (Docker), files are at /app/assets/fonts/
+// In production (Docker), files are at /app/Frontend_main/assets/fonts/
 // In development, files are at ../Frontend_main/assets/fonts/
 const isProduction = process.env.NODE_ENV === "production";
 const assetsPath = isProduction
-  ? path.join(__dirname, "assets")
+  ? path.join(__dirname, "..", "Frontend_main", "assets")
   : path.join(__dirname, "..", "Frontend_main", "assets");
 
 const FONT_KANNADA_VAR = path.join(
@@ -101,7 +101,15 @@ app.use(
     credentials: true,
   }),
 );
-app.use(express.json());
+// Explicitly handle UTF-8 for Kannada text support
+app.use(express.json({ charset: "utf-8" }));
+app.use(express.text({ charset: "utf-8" }));
+app.use(express.urlencoded({ extended: true, charset: "utf-8" }));
+// Set UTF-8 as default response encoding
+app.use((req, res, next) => {
+  res.charset = "utf-8";
+  next();
+});
 
 // Setup multer for handling file uploads
 const upload = multer({ storage: multer.memoryStorage() });
@@ -529,11 +537,13 @@ app.use(express.static(frontendPath));
         : [];
 
       const doc = new PDFDocument({ size: "A4", margin: 50 });
-      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Type", "application/pdf; charset=utf-8");
       res.setHeader(
         "Content-Disposition",
         `attachment; filename="Report_${child.name || "Child"}_${Date.now()}.pdf"`,
       );
+      // Ensure proper UTF-8 encoding
+      res.setHeader("Content-Encoding", "utf-8");
       doc.pipe(res);
 
       // Register Kannada font if available
